@@ -231,7 +231,7 @@ func processLine(start time.Time, end time.Time, ci *cursorIncrementer, tempFile
 
 func main() {
 	startStr := flag.String("start", "", "Start time (RFC3339, e.g. 2024-01-01T00:00:00Z)")
-	endStr := flag.String("end", "", "End time (RFC3339, exclusive)")
+	endStr := flag.String("stop", "", "Stop time (RFC3339, exclusive)")
 	interval := flag.String("interval", "2d", "Interval (e.g. 1d, 1w, 1m, 1y, 48h)")
 	templateFile := flag.String("template", "template.flux", "Flux template file")
 	valueFile := flag.String("values", "values.md", "Markdown table with replacement values")
