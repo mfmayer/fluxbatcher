@@ -231,15 +231,15 @@ func processLine(start time.Time, end time.Time, ci *cursorIncrementer, tempFile
 
 func main() {
 	startStr := flag.String("start", "", "Start time (RFC3339, e.g. 2024-01-01T00:00:00Z)")
-	endStr := flag.String("stop", "", "Stop time (RFC3339, exclusive)")
+	stopStr := flag.String("stop", "", "Stop time (RFC3339, exclusive)")
 	interval := flag.String("interval", "2d", "Interval (e.g. 1d, 1w, 1m, 1y, 48h)")
 	templateFile := flag.String("template", "template.flux", "Flux template file")
-	valueFile := flag.String("values", "values.md", "Markdown table with replacement values")
+	valueFile := flag.String("table", "table.md", "Markdown table with replacement values")
 
 	flag.Parse()
 
-	if *startStr == "" || *endStr == "" {
-		fmt.Println("❗ Required arguments are at least --start and --end")
+	if *startStr == "" || *stopStr == "" {
+		fmt.Println("❗ Required arguments are at least --start and --stop")
 		os.Exit(1)
 	}
 
@@ -251,7 +251,7 @@ func main() {
 
 	start, err := time.Parse(time.RFC3339, *startStr)
 	must(err)
-	end, err := time.Parse(time.RFC3339, *endStr)
+	end, err := time.Parse(time.RFC3339, *stopStr)
 	must(err)
 
 	template := loadFile(*templateFile)

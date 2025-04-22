@@ -1,6 +1,6 @@
 # fluxbatcher
 
-**fluxbatcher** is a command-line utility that helps generate and execute batch Flux queries based on a Markdown-defined value table and a query template. It is especially designed for migrating and transforming sensor data — for example, when moving historical Home Assistant data between InfluxDB buckets and adapting tag structures in the process.
+**fluxbatcher** is a command-line utility that helps generate and execute batch Flux queries based on a Markdown-defined value table and a query template. It is especially designed for migrating and transforming sensor data — for example, when moving historical Home Assistant data between InfluxDB buckets and adapting tag structures in the process. The total time range can optionally be split into smaller intervals (or "batches") so that queries are executed in manageable chunks. This helps avoid long execution times and makes it easier to track progress across the data range.
 
 ## 🔍 Purpose
 
@@ -13,12 +13,13 @@ This tool is particularly useful when:
 ## 💡 How It Works
 
 You provide:
-- A **Flux query template** with placeholders (like `{{from}}`, `{{to}}`, `{{START}}`, `{{STOP}}`, etc.).
+
+- A **Flux query template** with placeholders (like `{{START}}`, `{{STOP}}`, which are derived from the command-line flags, and others such as `{{_measurement}}`, `{{domain}}`, `{{entity_id}}`, which typically refer to tags or fields in InfluxDB).
 - A **Markdown table** that defines values to substitute into the template.
 
 `fluxbatcher` renders one Flux query per row in the Markdown table, replaces placeholders, and prints them to `stdout` (or optionally writes them to files or executes them, in future versions).
 
-## 📦 Installation
+## 📆 Installation
 
 ```bash
 go install github.com/mfmayer/fluxbatcher@latest
@@ -39,17 +40,22 @@ fluxbatcher --template <template_file> --table <markdown_table> --start <start_t
 ```
 
 ### Required flags:
+
 - `--template`: Path to the Flux query template file.
 - `--table`: Path to the Markdown value table.
 - `--start`: Start time for the query (`{{START}}`).
 - `--stop`: Stop time for the query (`{{STOP}}`).
 
 ### Optional:
-- `--interval`: Chunk duration (e.g. `1h`, `12h`, `1d`). If set, the time range will be split into intervals, and the query will be repeated per interval and table row.
+
+- `--interval`: Chunk duration (e.g. `1h`, `12h`, `1d`, `1m`, `1y`). If set, the time range will be split into intervals, and the query will be repeated per interval and table row. Supported time units are `h` (hour), `d` (day), `m` (month), and `y` (year).
 
 ## 📄 Example
 
+This example shows how to migrate sensor data from an old InfluxDB bucket (old\_homeassist) to a new one (new\_homeassist), while also transforming tag and measurement values. The goal is to align historical data with the tag format expected by a freshly installed Home Assistant instance.
+
 ### `examples/template.flux`:
+
 ```flux
 import "date"
 
@@ -70,6 +76,7 @@ from(bucket: "old_homeassist")
 ```
 
 ### `examples/values.md`:
+
 ```markdown
 | from                                   | to                                 | measurement         | domain |
 | -------------------------------------- | ---------------------------------- | ------------------- | ------ |
@@ -82,17 +89,20 @@ from(bucket: "old_homeassist")
 ### Run it:
 
 ```bash
-fluxbatcher   --template examples/template.flux   --table examples/values.md   --start 2023-01-01T00:00:00Z   --stop 2023-01-02T00:00:00Z   --interval 6h
+$ cd examples
+$ fluxbatcher \
+  --template template.flux \
+  --table values.md \
+  --start 2023-01-01T00:00:00Z \
+  --stop 2024-01-01T00:00:00Z \
+  --interval 1m
+row 0: Processing: 2023-01-01T00:00:00Z → 2024-01-01T00:00:00Z [=================================================>] 100% (🕓 7s) ✅
+row 1: Processing: 2023-01-01T00:00:00Z → 2024-01-01T00:00:00Z [=================================================>] 100% (🕓 3s) ✅
+row 2: Processing: 2023-01-01T00:00:00Z → 2024-01-01T00:00:00Z [=================================================>] 100% (🕓 6s) ✅
+row 3: Processing: 2023-01-01T00:00:00Z → 2024-01-01T00:00:00Z [=================================================>] 100% (🕓 5s) ✅
 ```
 
-This will generate one Flux query per value row and per 6-hour interval.
-
-## 🧠 Notes
-
-- `{{START}}` and `{{STOP}}` are reserved placeholders and will be replaced by values from the CLI.
-- All other placeholders (e.g. `{{from}}`, `{{to}}`, `{{domain}}`) must match column headers in the Markdown table.
-- Useful for Home Assistant users migrating to new InfluxDB setups with changed tag conventions.
-- Output is printed to `stdout`, but you can redirect it to a file or pipe it into a script for execution.
+This will generate one Flux query per value row and per 1-month interval.
 
 ## 🤝 Contributing
 
